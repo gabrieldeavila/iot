@@ -1,121 +1,100 @@
 #include <Arduino.h>
+#include <Servo.h> // Inclu i a biblioteca Servo para controlar servos
 
-int conta = 0;
-
-// --- CONFIGURAÇÃO DA LÓGICA DO BOTÃO ---
-// Se continuar invertido, troque: PRESSIONADO = HIGH e SOLTO = LOW
-const int PINO_BOTAO = 10;
-const int ESTADO_PRESSIONADO = LOW;
-const int ESTADO_SOLTO = HIGH;
-
-int estadoAnterior = ESTADO_SOLTO;
-unsigned long tempoPressionado = 0;
-const unsigned long tempoLongPress = 1000;
-bool longPressFoiAtivado = false;
-
-// Matriz Ânodo Comum (0 liga, 1 desliga)
-byte displaySeteSeg[10][7] = {
-    {0, 0, 0, 0, 0, 0, 1}, {1, 0, 0, 1, 1, 1, 1}, {0, 0, 1, 0, 0, 1, 0}, {0, 0, 0, 0, 1, 1, 0}, {1, 0, 0, 1, 1, 0, 0}, {0, 1, 0, 0, 1, 0, 0}, {0, 1, 0, 0, 0, 0, 0}, {0, 0, 0, 1, 1, 1, 1}, {0, 0, 0, 0, 0, 0, 0}, {0, 0, 0, 0, 1, 0, 0}};
-
-void ligaSegmentosDisplay(byte digito)
-{
-  byte pino = 2;
-  for (byte i = 0; i < 7; ++i)
-  {
-    digitalWrite(pino, displaySeteSeg[digito][i]);
-    ++pino;
-  }
-}
-
-void normalPress()
-{
-  conta++;
-
-  if (conta > 9)
-  {
-    conta = 0;
-    ligaSegmentosDisplay(conta);
-  }
-  else
-  {
-    ligaSegmentosDisplay(conta);
-  }
-}
-
-void longPress()
-{
-  conta--;
-
-  if (conta < 0)
-  {
-    conta = 9;
-    ligaSegmentosDisplay(conta);
-  }
-  else
-  {
-    ligaSegmentosDisplay(conta);
-  }
-
-  Serial.print("Aplicando Long Press, valor vai para: ");
-  Serial.println(conta);
-}
+Servo meuServo; // Cria um objeto Servo para controlar o servo motor
+int pos;        // Declara uma variável para controlar a posição do servo motor
 
 void setup()
 {
-  for (int i = 2; i <= 8; i++)
-  {
-    pinMode(i, OUTPUT);
-  }
-
-  pinMode(PINO_BOTAO, INPUT_PULLUP);
-  ligaSegmentosDisplay(conta);
+  meuServo.attach(6); // Associa o servo motor ao pino digital 6 do Arduino
+  meuServo.write(0);  // Define a posição inicial do servo motor para 0 graus
   Serial.begin(9600);
 }
 
 void loop()
 {
-  if (digitalRead(10) == HIGH)
+  // O potenciômetro agora controla o "BPM" da dança
+  int leitura = analogRead(A0);
+  int velocidade = map(leitura, 0, 1023, 5, 50);
+
+  Serial.print("Ritmo da Dança: ");
+  Serial.println(velocidade);
+
+  // --- PASSO 1: A "Onda" Elegante ---
+  for (pos = 0; pos <= 180; pos += 5)
   {
-    unsigned long tempoAgora = millis();
-
-    if (tempoPressionado == 0)
-    {
-      tempoPressionado = tempoAgora;
-      Serial.print("Usuario comecou a pressionar aos ");
-      Serial.print(tempoPressionado);
-      Serial.println("ms");
-    }
-    else if (tempoAgora > tempoPressionado && tempoAgora - tempoPressionado > 500)
-    {
-      Serial.print("Diferenca de ");
-      Serial.print(tempoAgora - tempoPressionado);
-      Serial.print(" tempoAgora eh: ");
-      Serial.print(tempoAgora);
-      Serial.print(" E o tempoPressionado: ");
-      Serial.print(tempoPressionado);
-      Serial.print(" ");
-
-      longPress();
-      longPressFoiAtivado = true;
-      // diminui por 250 pros 500s passarem no modo gato a jato ne paezao
-      tempoPressionado = tempoAgora - 250;
-    }
+    meuServo.write(pos);
+    delay(velocidade); // O pot controla a fluidez da onda
   }
-  else if (tempoPressionado > 0)
+  for (pos = 180; pos >= 0; pos -= 5)
   {
-    Serial.print("Usuario pressionou por: ");
-    Serial.print(millis() - tempoPressionado);
-    Serial.println("ms");
-
-    if (!longPressFoiAtivado && millis() - tempoPressionado < 500)
-    {
-      Serial.println("Aplicando Normal Press!");
-      normalPress();
-    }
-
-    longPressFoiAtivado = false;
-    tempoPressionado = 0;
+    meuServo.write(pos);
+    delay(velocidade);
   }
 
-  delay(100);
+  for (int i = 0; i < 10; i++)
+  {
+    meuServo.write(85);
+    delay(50);
+    meuServo.write(95);
+    delay(50);
+  }
+
+  // --- PASSO 2: O "Tremidinho" (Seu favorito!) ---
+  // Ele vai para o meio e dá aquela vibrada
+  meuServo.write(90);
+  delay(200);
+  for (int i = 0; i < 12; i++)
+  {
+    meuServo.write(85);
+    delay(velocidade / 2); // Tremor mais rápido que a onda
+    meuServo.write(95);
+    delay(velocidade / 2);
+  }
+
+  for (int i = 0; i < 15; i++)
+  {
+    meuServo.write(80);  // Vai um pouco para a esquerda
+    delay(30);           // Quase sem pausa
+    meuServo.write(100); // Vai um pouco para a direita
+    delay(30);
+  }
+
+  int passos[] = {0, 45, 90, 135, 180, 90, 0}; // Lista de posições
+  for (int j = 0; j < 7; j++)
+  {
+    meuServo.write(passos[j]);
+    delay(150); // Pausa brusca para dar o efeito de "travado"
+  }
+  // --- PASSO 3: O "Deslize" de Lado a Lado ---
+  meuServo.write(30);
+  delay(300);
+  meuServo.write(150);
+  delay(300);
+  meuServo.write(90);
+  delay(300);
+
+  // --- PASSO 4: Final de Estrela (O Giro Rápido) ---
+  for (int i = 0; i < 3; i++)
+  {
+    meuServo.write(0);
+    delay(150);
+    meuServo.write(180);
+    delay(150);
+  }
+
+  // 3. Efeito Mola (Caminhada suave e volta tremida)
+  for (pos = 0; pos <= 180; pos += 5)
+  {
+    meuServo.write(pos);
+    delay(20);
+  }
+  // Volta tremendo como uma mola solta
+  for (int k = 0; k < 10; k++)
+  {
+    meuServo.write(10);
+    delay(40);
+    meuServo.write(0);
+    delay(40);
+  }
 }

@@ -1,24 +1,67 @@
 #include <Arduino.h>
 
-#define ledPin 3 // Pino do LED
+class DCMotor
+{
+  int spd = 255, pin1, pin2;
 
-int intervalo; // Intervalo em milissegundos para o piscar do LED
+public:
+  void Pinout(int in1, int in2)
+  { // Pinout é o método para a declaração dos pinos que vão controlar
+    // o objeto motor
+    pin1 = in1;
+    pin2 = in2;
 
+    Serial.print("Motor conectado aos pinos: ");
+
+    pinMode(pin1, OUTPUT);
+    pinMode(pin2, OUTPUT);
+  }
+  void Speed(int in1)
+  { // Speed é o método que irá ser responsável por regular a velocidade
+    spd = in1;
+  }
+  void Forward()
+  { // Forward é o método para fazer o motor girar para frente
+    analogWrite(pin1, spd);
+    digitalWrite(pin2, LOW);
+  }
+  void Backward()
+  { // Backward é o método para fazer o motor girar para trás
+    Serial.println("Reverso");
+    digitalWrite(pin1, LOW);
+    analogWrite(pin2, spd);
+  }
+  void Stop()
+  { // Stop é o metodo para fazer o motor ficar parado.
+    Serial.println("Parado");
+    digitalWrite(pin1, LOW);
+    digitalWrite(pin2, LOW);
+  }
+};
+DCMotor Motor1, Motor2; // Criação de dois objetos motores, já que usaremos dois motores, e eles já
+// estão prontos para receber os comandos já configurados acima.
 void setup()
 {
-  pinMode(ledPin, OUTPUT); // Configura o pino do LED como saída
+  Motor1.Pinout(6, 5); // Seleção dos pinos que cada motor usará, como descrito na classe.
+  Motor2.Pinout(10, 11);
+  Serial.begin(9600); // Inicialização da comunicação serial, para monitorar o que o programa está fazendo.
 }
-
 void loop()
 {
-  int leituraPotenciometro = analogRead(A0); // Lê o valor do potenciômetro
-
-  // Mapeia a leitura do potenciômetro para um intervalo de 10 ms a 1000 ms
-  intervalo = map(leituraPotenciometro, 0, 1023, 10, 1000);
-
-  // Alterna o estado do LED com base no intervalo
-  digitalWrite(ledPin, HIGH);
-  delay(intervalo); // Espera o intervalo em milissegundos
-  digitalWrite(ledPin, LOW);
-  delay(intervalo); // Espera o intervalo em milissegundos
+  Serial.println("Frente"); // Imprime no monitor serial a ação que o robô está realizando, para melhor entendimento do que o programa está fazendo.
+  Motor2.Speed(255);
+  Motor1.Speed(255);        // A velocidade do motor pode variar de 0 a 255, onde 255 é a velocidade máxima.
+  Motor1.Forward(); // Comando para o robô ir para frente
+  Motor2.Forward();
+  delay(1000);
+  
+  // Motor1.Backward(); // Comando para o robô ir para trás
+  // Motor2.Backward();
+  // delay(1000);
+  // Motor1.Forward(); // Comando para o robô girar
+  // Motor2.Backward();
+  // delay(1000);
+  // Motor1.Stop(); // Comando para o robô parar
+  // Motor2.Stop();
+  // delay(500);
 }
